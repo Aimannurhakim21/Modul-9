@@ -1,48 +1,54 @@
 public class ValidateRequest {
-    private boolean validateRequest(CustomerInquiryRequest request, int customerIDFieldLength, int productFieldLength) {
-        if (request.CustomerProduct.ProductNumber != null && request.Customer.CustomerID != null) {
-            if (request.CustomerProduct.ProductNumber.equals("") && request.Customer.CustomerID.equals("")) {
-                // Both were populated
-                throw new BusinessException(HandledErrors.InvalidBothParameterMessage);
-            } else if (request.Customer.CustomerID.equals("") && request.CustomerProduct.ProductNumber.equals("")) {
-                // if objects were instantiated but not populated
-                throw new BusinessException(HandledErrors.CustomerEmptyMessage);
-            } else if (!request.Customer.CustomerID.equals("")) {
-                // Note: ProductNumber was equal
-                // to string.empty Check Customer ID length
-                if (request.Customer.CustomerID.length() > customerIDFieldLength) {
-                    throw new BusinessException(HandledErrors.CustomerInvalidLengthMessage);
-                }
-            } else {
-                // Note: CustomerID was equal
-                // to string.empty check Product Length
-                if (request.CustomerProduct.ProductNumber.length() > productFieldLength) {
-                    throw new BusinessException(HandledErrors.ProductInvalidLengthMessage);
-                }
-            }
-        } else if (request.CustomerProduct.ProductNumber == null && request.Customer.CustomerID == null) {
-            // Both were null
+    private void validateRequest(CustomerInquiryRequest request, int customerFieldLength, int productFieldLength) {
+        checkCustomerInquiryNotNullOrEmpty(request);
+        checkCustomerInquiryNullOrEmpty(request);
+        checkCustomerIDValid(request, customerFieldLength);
+        checkProductNumberValid(request, productFieldLength);
+    }
+
+    private void checkCustomerInquiryNotNullOrEmpty(CustomerInquiryRequest request) {
+        if (!isNullOrEmpty(request.CustomerProduct.ProductNumber) && !isNullOrEmpty(request.Customer.CustomerID)) {
+            // Both were populated
+            throw new BusinessException(HandledErrors.InvalidBothParameterMessage);
+        }
+    }
+
+    private void checkCustomerInquiryNullOrEmpty(CustomerInquiryRequest request) {
+        if (isNullOrEmpty(request.Customer.CustomerID) && isNullOrEmpty(request.CustomerProduct.ProductNumber)) {
+            // Both are null or empty string
             throw new BusinessException(HandledErrors.CustomerEmptyMessage);
-        } else if (request.CustomerProduct.ProductNumber == null) {
-            // ProductNumber was null and CustomerID was not null
+        }
+    }
+
+    private void checkCustomerIDValid(CustomerInquiryRequest request, int customerIDFieldLength) {
+        if (!isNullOrEmpty(request.Customer.CustomerID)) {
+            // Check Customer ID length
             if (request.Customer.CustomerID.length() > customerIDFieldLength) {
                 throw new BusinessException(HandledErrors.CustomerInvalidLengthMessage);
             }
-        } else { // ProductNumber not null and CustomerID was null
+            // Pad the left of the customer id
+            request.Customer.CustomerID = padLeft(request.Customer.CustomerID, customerIDFieldLength, '0');
+        }
+    }
+
+    private void checkProductNumberValid(CustomerInquiryRequest request, int productFieldLength) {
+        if (!isNullOrEmpty(request.CustomerProduct.ProductNumber)) {
             // Check Product Length
             if (request.CustomerProduct.ProductNumber.length() > productFieldLength) {
                 throw new BusinessException(HandledErrors.ProductInvalidLengthMessage);
             }
+            // Pad the left of the product number
+            request.CustomerProduct.ProductNumber = padLeft(request.CustomerProduct.ProductNumber, productFieldLength,
+                    '0');
         }
-        // Set objects below with formatted data i.e PadLeft
-        if (request.Customer.CustomerID != null) {
-            request.Customer.CustomerID = String.format("%" + customerIDFieldLength + "s", request.Customer.CustomerID)
-                    .replace(' ', '0');
-        }
-        if (request.CustomerProduct.ProductNumber != null) {
-            request.CustomerProduct.ProductNumber = String
-                    .format("%" + productFieldLength + "s", request.CustomerProduct.ProductNumber).replace(' ', '0');
-        }
-        return true;
     }
+
+    private boolean isNullOrEmpty(String value) {
+        return value == null || value.isEmpty();
+    }
+
+    private String padLeft(String value, int length, char padChar) {
+        return String.format("%" + length + "s", value).replace(' ', padChar);
+    }
+
 }
